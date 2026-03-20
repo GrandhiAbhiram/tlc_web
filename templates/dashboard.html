@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard – TLC Prediction System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="dash-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-logo"><i class="fa-solid fa-lungs"></i></div>
+            <div>
+                <h2>TLC System</h2>
+                <span>Hybrid ML MODEL</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="active"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+            <a href="/"><i class="fa-solid fa-stethoscope"></i> New Prediction</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="sidebar-user">
+                <div class="user-avatar">{{ session.get('user_name', 'U')[0] | upper }}</div>
+                <div>
+                    <div class="user-name">{{ session.get('user_name', 'User') }}</div>
+                    <div class="user-email">{{ session.get('user_email', '') }}</div>
+                </div>
+            </div>
+            <a href="/logout" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</a>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <div class="page-header">
+            <div>
+                <h1>Dashboard</h1>
+                <p>Welcome back, {{ session.get('user_name', 'User') }}!</p>
+            </div>
+            <a href="/" class="new-pred-btn"><i class="fa-solid fa-plus"></i> New Prediction</a>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="stat-value">{{ history | length }}</div>
+                <div class="stat-label">Total Predictions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fa-solid fa-heart-pulse"></i></div>
+                <div class="stat-value">
+                    {% if history %}{{ "%.1f" | format(history[-1].health_score) }}{% else %}—{% endif %}
+                </div>
+                <div class="stat-label">Latest Health Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="fa-solid fa-lungs"></i></div>
+                <div class="stat-value">
+                    {% if history %}{{ history[-1].tlc }} L{% else %}—{% endif %}
+                </div>
+                <div class="stat-label">Latest TLC</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                <div class="stat-value">
+                    {% if history | length > 1 %}
+                        {% set diff = history[-1].tlc - history[-2].tlc %}
+                        {{ "%.2f" | format(diff) }} L
+                    {% else %}—{% endif %}
+                </div>
+                <div class="stat-label">Change from Previous</div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+
+            <!-- TLC Trend Chart -->
+            <div class="card">
+                <h3><i class="fa-solid fa-chart-line"></i> TLC Trend Over Time</h3>
+                {% if history %}
+                <canvas id="trendChart" height="220"></canvas>
+                {% else %}
+                <div class="empty"><i class="fa-solid fa-chart-area"></i><p>Make your first prediction to see trends</p></div>
+                {% endif %}
+            </div>
+
+            <!-- Health Score Distribution -->
+            <div class="card">
+                <h3><i class="fa-solid fa-chart-pie"></i> Health Score Distribution</h3>
+                {% if history %}
+                <canvas id="distributionChart" height="220"></canvas>
+                {% else %}
+                <div class="empty"><i class="fa-solid fa-chart-pie"></i><p>No data yet</p></div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- History Table -->
+        <div class="card">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Prediction History</h3>
+            {% if history %}
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>TLC (L)</th>
+                        <th>Health Score</th>
+                        <th>Status</th>
+                        <th>Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in history | reverse %}
+                    <tr>
+                        <td>{{ history | length - loop.index + 1 }}</td>
+                        <td><strong>{{ item.tlc }}</strong></td>
+                        <td>
+                            <div class="score-bar-wrap">
+                                <div class="score-bar" style="width: {{ item.health_score }}%;
+                                    background: {{ 'var(--success)' if item.health_score >= 80 else ('var(--warning)' if item.health_score >= 60 else ('var(--orange)' if item.health_score >= 40 else 'var(--danger)')) }};
+                                "></div>
+                                <span>{{ item.health_score }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.health_score >= 80 %}
+                                <span class="badge green"><i class="fa-solid fa-circle-check"></i> Healthy</span>
+                            {% elif item.health_score >= 60 %}
+                                <span class="badge yellow"><i class="fa-solid fa-circle-minus"></i> Mild</span>
+                            {% elif item.health_score >= 40 %}
+                                <span class="badge orange"><i class="fa-solid fa-circle-exclamation"></i> Moderate</span>
+                            {% else %}
+                                <span class="badge red"><i class="fa-solid fa-circle-xmark"></i> Severe</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set idx = history | length - loop.index %}
+                            {% if idx > 0 %}
+                                {% set prev = history[idx - 1].tlc %}
+                                {% set diff = item.tlc - prev %}
+                                <span class="{{ 'text-green' if diff >= 0 else 'text-red' }}">
+                                    <i class="fa-solid {{ 'fa-arrow-up' if diff >= 0 else 'fa-arrow-down' }}"></i>
+                                    {{ "%.2f" | format(diff | abs) }} L
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty"><i class="fa-solid fa-inbox"></i><p>No predictions yet. Click "New Prediction" to get started!</p></div>
+            {% endif %}
+        </div>
+
+    </main>
+</div>
+
+{% if history %}
+<script>
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+const historyData = {{ history | tojson }};
+
+/* TLC Trend Line Chart */
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: historyData.map((_, i) => 'Pred ' + (i + 1)),
+        datasets: [{
+            label: 'TLC (Liters)',
+            data: historyData.map(h => h.tlc),
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2.5,
+            pointBackgroundColor: '#3B82F6',
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { grid: { color: '#F1F5F9' }, title: { display: true, text: 'Liters', color: '#94A3B8' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+/* Health Distribution Doughnut */
+let healthy = 0, mild = 0, moderate = 0, severe = 0;
+historyData.forEach(h => {
+    if (h.health_score >= 80) healthy++;
+    else if (h.health_score >= 60) mild++;
+    else if (h.health_score >= 40) moderate++;
+    else severe++;
+});
+
+new Chart(document.getElementById('distributionChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Healthy', 'Mild', 'Moderate', 'Severe'],
+        datasets: [{
+            data: [healthy, mild, moderate, severe],
+            backgroundColor: ['#22C55E', '#F59E0B', '#F97316', '#EF4444'],
+            borderWidth: 0,
+            spacing: 3,
+            borderRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 12, weight: '500' } }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+
+</body>
+</html>

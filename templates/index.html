@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLC Prediction System – Total Lung Capacity</title>
+    <meta name="description" content="AI-powered Total Lung Capacity Prediction System for clinical pulmonary assessment.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="brand">
+            <div class="brand-icon"><i class="fa-solid fa-lungs"></i></div>
+            <div class="brand-text">
+                <h1>TLC Prediction System</h1>
+                <span>Hybrid  Ensemble ML Model</span>
+            </div>
+        </a>
+        <div class="header-actions">
+            <a href="/dashboard" class="header-link"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+            <a href="/logout" class="header-link"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            <div class="header-badge">
+                <span class="dot"></span>
+                System Online
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+    <h2>Predict <span class="highlight">Total Lung Capacity</span> with AI</h2>
+    <p>Enter patient demographics, spirometry readings, and blood gas values below to receive an AI-driven lung capacity prediction with clinical interpretation.</p>
+</section>
+
+<!-- ===== HISTORY BANNER ===== -->
+{% if history %}
+<div class="history-banner">
+    <div class="history-card">
+        <div class="history-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div class="history-info">
+            <h4>Your Previous Predictions</h4>
+            <p>{{ history | length }} prediction{{ 's' if history | length > 1 else '' }} so far</p>
+        </div>
+        <div class="history-pills">
+            {% for item in history | reverse %}
+            {% if loop.index <= 5 %}
+            <div class="history-pill">
+                <span class="pill-value">{{ item.tlc }} L</span>
+                – {{ item.status }}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== FORM ===== -->
+<form action="/predict" method="POST">
+
+<div class="form-grid">
+
+    <!-- ===== DEMOGRAPHICS ===== -->
+    <div class="section-block">
+        <h3 class="section-title">
+            <span class="icon"><i class="fa-solid fa-user"></i></span>
+            Demographics
+        </h3>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label><i class="fa-solid fa-calendar-days"></i> Age <span class="unit">(years)</span></label>
+                <input type="number" step="any" name="age" placeholder="e.g. 45" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fa-solid fa-venus-mars"></i> Gender</label>
+                <input type="text" name="gender" value="{{ session.get('user_gender', 'Male') }}" readonly style="background-color: #f1f5f9; cursor: not-allowed; color: #475569; pointer-events: none;">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label><i class="fa-solid fa-ruler-vertical"></i> Height <span class="unit">(cm)</span></label>
+                <input type="number" step="any" name="height" placeholder="e.g. 170" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fa-solid fa-weight-scale"></i> Weight <span class="unit">(kg)</span></label>
+                <input type="number" step="any" name="weight" placeholder="e.g. 70" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-smoking"></i> Smoking Status</label>
+            <select name="smoking">
+                <option value="never">Never</option>
+                <option value="former">Former</option>
+                <option value="current">Current</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ===== SPIROMETRY ===== -->
+    <div class="section-block">
+        <h3 class="section-title">
+            <span class="icon"><i class="fa-solid fa-lungs"></i></span>
+            Spirometry
+            <span class="info-icon" data-info="Spirometry measures lung airflow. FEV1 and FVC help detect obstructive and restrictive lung diseases.">?</span>
+        </h3>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-wind"></i> FEV1 <span class="unit">(Liters)</span></label>
+            <input type="number" step="any" name="fev" id="fev" placeholder="e.g. 3.8" required>
+            <div class="range-popup" id="fev-range"></div>
+            <div class="input-warning" id="fev-warning"></div>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-wind"></i> FVC <span class="unit">(Liters)</span></label>
+            <input type="number" step="any" name="fvc" id="fvc" placeholder="e.g. 4.8" required>
+            <div class="range-popup" id="fvc-range"></div>
+            <div class="input-warning" id="fvc-warning"></div>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-percent"></i> FEV1/FVC Ratio</label>
+            <input type="number" step="any" name="ratio" placeholder="e.g. 0.79" required>
+        </div>
+    </div>
+
+    <!-- ===== BLOOD GAS ===== -->
+    <div class="section-block">
+        <h3 class="section-title">
+            <span class="icon"><i class="fa-solid fa-droplet"></i></span>
+            Blood Gas Values
+            <span class="info-icon" data-info="Blood gas values like SpO2 and PCO2 indicate oxygen supply and carbon dioxide removal efficiency in lungs.">?</span>
+        </h3>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-heart-pulse"></i> SpO2 <span class="unit">(%)</span></label>
+            <input type="number" step="any" name="spo2" id="spo2" placeholder="e.g. 97" required>
+            <div class="range-popup" id="spo2-range"></div>
+            <div class="input-warning" id="spo2-warning"></div>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-flask"></i> PCO2 <span class="unit">(mmHg)</span></label>
+            <input type="number" step="any" name="pco2" id="pco2" placeholder="e.g. 40" required>
+            <div class="range-popup" id="pco2-range"></div>
+            <div class="input-warning" id="pco2-warning"></div>
+        </div>
+    </div>
+
+    <!-- ===== ADDITIONAL METRICS ===== -->
+    <div class="section-block">
+        <h3 class="section-title">
+            <span class="icon"><i class="fa-solid fa-chart-simple"></i></span>
+            Additional Lung Metrics
+        </h3>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-gauge-high"></i> PEF <span class="unit">(L/min)</span></label>
+            <input type="number" step="any" name="pef" id="pef" placeholder="e.g. 500" required>
+            <div class="range-popup" id="pef-range"></div>
+            <div class="input-warning" id="pef-warning"></div>
+        </div>
+
+        <div class="form-group">
+            <label><i class="fa-solid fa-circle-dot"></i> Estimated Residual Volume <span class="unit">(Liters)</span></label>
+            <input type="number" step="any" name="rv" placeholder="e.g. 1.5" required>
+        </div>
+    </div>
+
+    <!-- ===== SUBMIT ===== -->
+    <div class="submit-area">
+        <button type="submit" class="predict-btn" id="predictBtn">
+            <span id="btnText"><i class="fa-solid fa-lungs"></i> &nbsp;Predict Lung Capacity</span>
+            <span class="spinner" id="spinner"></span>
+        </button>
+    </div>
+
+</div>
+
+</form>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <p class="footer-disclaimer">
+        <strong><i class="fa-solid fa-circle-info"></i> Disclaimer:</strong> This tool is intended for educational and research purposes only.
+        Predictions are AI-generated and should not replace professional medical diagnosis.
+        Always consult a qualified healthcare provider for clinical decisions.
+    </p>
+    <p class="footer-copyright">© 2026 TLC Prediction System. All rights reserved.</p>
+</footer>
+
+<!-- ===== SCRIPTS ===== -->
+<script>
+const genderSelect = document.querySelector('select[name="gender"]');
+
+const ranges = {
+    fev: { male: "3.5 – 5.0 L", female: "2.5 – 4.0 L" },
+    fvc: { male: "4.5 – 6.0 L", female: "3.0 – 4.5 L" },
+    pef: { male: "400 – 700 L/min", female: "300 – 500 L/min" },
+    spo2: { general: "95 – 100 %" },
+    pco2: { general: "35 – 45 mmHg" }
+};
+
+function showRange(inputId, popupId) {
+    const input = document.getElementById(inputId);
+    const popup = document.getElementById(popupId);
+    if (!input || !popup) return;
+
+    input.addEventListener("focus", () => {
+        let content = "";
+        if (ranges[inputId].general) {
+            content = `<strong>Normal Range</strong><br>${ranges[inputId].general}`;
+        } else {
+            content = `<strong>Normal Range</strong><br>Male: ${ranges[inputId].male}<br>Female: ${ranges[inputId].female}`;
+        }
+        popup.innerHTML = content;
+        popup.classList.add("show");
+    });
+
+    input.addEventListener("blur", () => {
+        popup.classList.remove("show");
+    });
+}
+
+showRange("fev", "fev-range");
+showRange("fvc", "fvc-range");
+showRange("pef", "pef-range");
+showRange("spo2", "spo2-range");
+showRange("pco2", "pco2-range");
+
+function validateInput(id, min, max, message) {
+    const input = document.getElementById(id);
+    const warning = document.getElementById(id + "-warning");
+    if (!input || !warning) return;
+
+    input.addEventListener("input", () => {
+        const value = parseFloat(input.value);
+        if (!value) { warning.innerText = ""; return; }
+        if (value < min || value > max) {
+            warning.innerText = message;
+        } else {
+            warning.innerText = "";
+        }
+    });
+}
+
+validateInput("spo2", 95, 100, "⚠ Low oxygen saturation detected. Normal range: 95–100%");
+validateInput("pco2", 35, 45, "⚠ Abnormal CO₂ level detected. Normal range: 35–45 mmHg");
+validateInput("fev", 2.5, 5, "⚠ FEV1 value outside typical range.");
+validateInput("fvc", 3, 6, "⚠ FVC value outside typical range.");
+validateInput("pef", 300, 700, "⚠ PEF value outside typical range.");
+
+document.querySelector("form").addEventListener("submit", function () {
+    let btn = document.getElementById("predictBtn");
+    let text = document.getElementById("btnText");
+    let spinner = document.getElementById("spinner");
+
+    text.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> &nbsp;AI Analysing...";
+    spinner.style.display = "none";
+    btn.disabled = true;
+});
+</script>
+
+</body>
+</html>

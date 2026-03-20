@@ -1,0 +1,269 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #e3f2fd, #f5f9ff);
+    margin: 0;
+    padding: 0;
+}
+
+/* Form Container */
+form {
+    width: 520px;
+    margin: 40px auto;
+}
+
+/* Main Title */
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-top: 30px;
+    font-weight: 600;
+}
+
+/* Section Block */
+.section-block {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    padding: 22px;
+    margin-bottom: 25px;
+    border-radius: 18px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    transition: 0.3s ease;
+}
+
+/* Hover Lift Effect */
+.section-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+
+/* Section Heading */
+.section-title {
+    color: #1e3a5f;
+    margin-bottom: 18px;
+    border-left: 6px solid #4CAFED;
+    padding-left: 12px;
+    font-size: 18px;
+}
+
+/* Inputs */
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    font-size: 14px;
+    transition: 0.3s;
+    background: #f9fbfd;
+}
+
+/* Input Focus Glow */
+input:focus, select:focus {
+    border-color: #4CAFED;
+    outline: none;
+    background: white;
+    box-shadow: 0 0 10px rgba(76,175,237,0.3);
+    transform: scale(1.01);
+}
+
+/* Button */
+button {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #4CAFED, #2196F3);
+    border: none;
+    color: white;
+    font-size: 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Button Hover */
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* Breathing Animation */
+@keyframes breathe {
+    0% { box-shadow: 0 0 0 rgba(76,175,237,0.2); }
+    50% { box-shadow: 0 0 20px rgba(76,175,237,0.25); }
+    100% { box-shadow: 0 0 0 rgba(76,175,237,0.2); }
+}
+
+.section-block {
+    animation: breathe 6s infinite;
+}
+/* Info Icon */
+.info-icon {
+    margin-left: 8px;
+    cursor: pointer;
+    color: #4CAFED;
+    font-weight: bold;
+    position: relative;
+}
+
+/* Tooltip Box */
+.info-icon::after {
+    content: attr(data-info);
+    position: absolute;
+    left: 0;
+    bottom: 30px;
+    width: 220px;
+    background: #2c3e50;
+    color: white;
+    padding: 10px;
+    font-size: 13px;
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* Show Tooltip */
+.info-icon:hover::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+.info-icon:hover {
+    color: #2196F3;
+    transform: scale(1.2);
+}
+/* Predict Button */
+.predict-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #4CAFED, #2196F3);
+    border: none;
+    color: white;
+    font-size: 17px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 5px 18px rgba(33,150,243,0.3);
+}
+
+/* Hover Lift */
+.predict-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(33,150,243,0.45);
+}
+
+/* Button Press Effect */
+.predict-btn:active {
+    transform: scale(0.97);
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 rgba(33,150,243,0.4); }
+    50% { box-shadow: 0 0 18px rgba(33,150,243,0.6); }
+    100% { box-shadow: 0 0 0 rgba(33,150,243,0.4); }
+}
+
+.predict-btn {
+    animation: pulse 3s infinite;
+}
+/* Spinner */
+.spinner {
+    width: 18px;
+    height: 18px;
+    border: 3px solid white;
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    display: none;
+    margin-left: 10px;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Button Flex Alignment */
+.predict-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ===== Range Popup ===== */
+
+.range-popup{
+    display:none;
+    background:white;
+    border-left:4px solid #4CAFED;
+    padding:10px 14px;
+    margin-top:-10px;
+    margin-bottom:10px;
+    border-radius:8px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    font-size:13px;
+    color:#374151;
+}
+
+.range-popup strong{
+    color:#1e3a5f;
+}
+
+.range-popup.show{
+    display:block;
+}
+/* Lung Health Score Card */
+
+.health-score-card{
+    margin-top:30px;
+    padding:25px;
+    border-radius:12px;
+    background:white;
+    box-shadow:0 6px 20px rgba(0,0,0,0.08);
+    text-align:center;
+}
+
+.score-value{
+    font-size:40px;
+    font-weight:bold;
+    margin:10px 0;
+}
+
+.score-status{
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:10px;
+}
+
+.score-note{
+    font-size:14px;
+    color:#555;
+}
+
+/* Risk Colors */
+
+.score-green{
+    border-left:8px solid #22c55e;
+}
+
+.score-yellow{
+    border-left:8px solid #eab308;
+}
+
+.score-orange{
+    border-left:8px solid #f97316;
+}
+
+.score-red{
+    border-left:8px solid #ef4444;
+}
+.input-warning{
+    font-size:13px;
+    margin-top:-10px;
+    margin-bottom:10px;
+    color:#ef4444;
+}

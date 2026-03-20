@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLC Prediction Result – Lung Capacity Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='result.css') }}">
+</head>
+
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="brand">
+            <div class="brand-icon"><i class="fa-solid fa-lungs"></i></div>
+            <div class="brand-text">
+                <h1>TLC Prediction System</h1>
+                <span>Hybrid ML MODEL</span>
+            </div>
+        </a>
+        <div class="header-actions">
+            <a href="/dashboard" class="header-link"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+            <a href="/logout" class="header-link"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            <div class="header-badge">
+                <span class="dot"></span>
+                Analysis Complete
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- ===== PAGE CONTAINER ===== -->
+<div class="page-container">
+
+    <!-- Page Title -->
+    <div class="page-title">
+        <h2><i class="fa-solid fa-lungs"></i> &nbsp;Prediction Results</h2>
+        <p>Hybrid ML MODEL-powered analysis of your lung capacity data</p>
+    </div>
+
+    <!-- ===== TOP ROW: Prediction + Health Score ===== -->
+    <div class="top-row">
+
+        <!-- Prediction Card -->
+        <div class="prediction-card">
+            <h3><i class="fa-solid fa-crosshairs"></i> &nbsp;Predicted Total Lung Capacity</h3>
+            <div class="prediction-value">
+                <span class="number" id="tlcCounter">{{ final }}</span>
+                <span class="unit">L</span>
+            </div>
+            <p class="prediction-label">Based on ensemble model (RF + DT average)</p>
+        </div>
+
+        <!-- Health Score Card -->
+        <div class="health-score-card {{ health_color }}">
+            <h3><i class="fa-solid fa-heart-pulse"></i> &nbsp;Lung Health Score</h3>
+            <div class="score-ring">
+                <svg viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                    <circle class="ring-fill" cx="60" cy="60" r="50"
+                        stroke-dasharray="314.16"
+                        stroke-dashoffset="{{ 314.16 - (health_score / 100 * 314.16) }}"/>
+                </svg>
+                <div class="score-text">
+                    {{ health_score }}
+                    <small>/ 100</small>
+                </div>
+            </div>
+            <div class="score-status">{{ health_status }}</div>
+            <p class="score-note">
+                Score represents how close your predicted capacity
+                is to the expected healthy range for your demographic.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ===== INFO ROW: Clinical + Recommendation ===== -->
+    <div class="info-row">
+
+        <div class="info-card clinical">
+            <div class="card-header">
+                <div class="card-icon"><i class="fa-solid fa-stethoscope"></i></div>
+                <h3>Clinical Interpretation</h3>
+            </div>
+            <p>{{ clinical_interpretation }}</p>
+        </div>
+
+        <div class="info-card recommendation">
+            <div class="card-header">
+                <div class="card-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                <h3>Recommendation</h3>
+            </div>
+            <p>{{ recommendation }}</p>
+        </div>
+
+    </div>
+
+    <!-- ===== CHARTS ROW 1: Comparison + Radar ===== -->
+    <div class="charts-row">
+
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-chart-column"></i> &nbsp;Lung Capacity Comparison</h3>
+            <canvas id="tlcChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- ===== CHARTS ROW 2: Feature Importance + Deviation ===== -->
+    <div class="charts-row">
+
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-ranking-star"></i> &nbsp;Feature Importance</h3>
+            <canvas id="featureChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h3><i class="fa-solid fa-scale-balanced"></i> &nbsp;TLC Reference Table</h3>
+            <table class="ref-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>TLC (L)</th>
+                        <th>Deviation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="ref-dot ideal"></span> Ideal (Non-Smoker)</td>
+                        <td><strong>{{ ideal_tlc }}</strong></td>
+                        <td>Baseline</td>
+                    </tr>
+                    <tr>
+                        <td><span class="ref-dot former"></span> Former Smoker</td>
+                        <td><strong>{{ former_tlc }}</strong></td>
+                        <td>{{ "%.1f" | format(((former_tlc - ideal_tlc) / ideal_tlc) * 100) }}%</td>
+                    </tr>
+                    <tr>
+                        <td><span class="ref-dot current"></span> Current Smoker</td>
+                        <td><strong>{{ current_tlc }}</strong></td>
+                        <td>{{ "%.1f" | format(((current_tlc - ideal_tlc) / ideal_tlc) * 100) }}%</td>
+                    </tr>
+                    <tr class="patient-row">
+                        <td><span class="ref-dot patient"></span> <strong>Your Capacity</strong></td>
+                        <td><strong>{{ final }}</strong></td>
+                        <td class="{{ 'text-green' if deviation >= 0 else 'text-red' }}">{{ deviation }}%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- ===== DIAGNOSIS SECTION ===== -->
+    <div class="diagnosis-section">
+        <div class="diagnosis-header">
+            <i class="fa-solid fa-lungs diagnosis-icon"></i>
+            <h2>Lung Condition Analysis</h2>
+        </div>
+
+        <div class="diagnosis-card {{ risk_class }}">
+            <h3 class="disease-title">{{ disease }}</h3>
+            <p class="disease-explanation">{{ explanation }}</p>
+
+            <div class="conditions-box">
+                <h4><i class="fa-solid fa-list-check"></i> &nbsp;Possible Conditions</h4>
+                <ul>
+                    {% for condition in possible_conditions %}
+                    <li><i class="fa-solid fa-circle-dot"></i> {{ condition }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOD & LIFESTYLE RECOMMENDATIONS ===== -->
+    <div class="lifestyle-section">
+        <div class="lifestyle-header">
+            <i class="fa-solid fa-utensils lifestyle-icon"></i>
+            <h2>Lung Health – Diet & Lifestyle Guide</h2>
+        </div>
+
+        <div class="lifestyle-grid">
+
+            <div class="lifestyle-card food-good">
+                <div class="lifestyle-card-icon"><i class="fa-solid fa-apple-whole"></i></div>
+                <h4>Foods That Help</h4>
+                <ul>
+                    <li><i class="fa-solid fa-carrot"></i> <strong>Leafy Greens</strong> – Spinach, kale (antioxidants)</li>
+                    <li><i class="fa-solid fa-fish"></i> <strong>Fatty Fish</strong> – Salmon, mackerel (omega-3)</li>
+                    <li><i class="fa-solid fa-pepper-hot"></i> <strong>Turmeric & Ginger</strong> – Anti-inflammatory</li>
+                    <li><i class="fa-solid fa-lemon"></i> <strong>Citrus Fruits</strong> – Vitamin C for immunity</li>
+                    <li><i class="fa-solid fa-egg"></i> <strong>Eggs & Nuts</strong> – Vitamin E protection</li>
+                </ul>
+            </div>
+
+            <div class="lifestyle-card food-avoid">
+                <div class="lifestyle-card-icon"><i class="fa-solid fa-ban"></i></div>
+                <h4>Foods to Avoid</h4>
+                <ul>
+                    <li><i class="fa-solid fa-xmark"></i> <strong>Processed Meats</strong> – Increases inflammation</li>
+                    <li><i class="fa-solid fa-xmark"></i> <strong>Sugary Drinks</strong> – Worsens lung function</li>
+                    <li><i class="fa-solid fa-xmark"></i> <strong>Excessive Salt</strong> – Fluid retention</li>
+                    <li><i class="fa-solid fa-xmark"></i> <strong>Fried Foods</strong> – Bloating affects breathing</li>
+                    <li><i class="fa-solid fa-xmark"></i> <strong>Alcohol</strong> – Reduces lung capacity</li>
+                </ul>
+            </div>
+
+            <div class="lifestyle-card lifestyle-tips">
+                <div class="lifestyle-card-icon"><i class="fa-solid fa-person-running"></i></div>
+                <h4>Lifestyle Tips</h4>
+                <ul>
+                    <li><i class="fa-solid fa-check"></i> <strong>Deep Breathing</strong> – 10 min daily exercises</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Regular Cardio</strong> – Walking, swimming</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Quit Smoking</strong> – #1 improvement factor</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Stay Hydrated</strong> – 8+ glasses water/day</li>
+                    <li><i class="fa-solid fa-check"></i> <strong>Clean Air</strong> – Use air purifiers indoors</li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+<!-- END page-container -->
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+    <p class="footer-disclaimer">
+        <strong><i class="fa-solid fa-circle-info"></i> Disclaimer:</strong> This tool is intended for educational and research purposes only.
+        Predictions are AI-generated and should not replace professional medical diagnosis.
+    </p>
+</footer>
+
+<!-- ===== BOTTOM BUTTON ===== -->
+<div class="bottom-btn-container">
+    <a href="/dashboard" class="predict-again-btn secondary">
+        <i class="fa-solid fa-grid-2"></i> Dashboard
+    </a>
+    <a href="/" class="predict-again-btn">
+        <i class="fa-solid fa-rotate-right"></i> Predict Again
+    </a>
+</div>
+
+<!-- ===== CHART SCRIPTS ===== -->
+<script>
+const blue = '#2563EB';
+const blueLight = 'rgba(37, 99, 235, 0.15)';
+const blueBg = 'rgba(37, 99, 235, 0.08)';
+
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#64748B';
+Chart.defaults.plugins.legend.display = false;
+
+/* ===== TLC Comparison Chart ===== */
+new Chart(document.getElementById('tlcChart'), {
+    type: 'bar',
+    data: {
+        labels: ['Ideal TLC', 'Former Smoker', 'Current Smoker', 'Your Capacity'],
+        datasets: [{
+            label: 'Capacity (Liters)',
+            data: [{{ ideal_tlc }}, {{ former_tlc }}, {{ current_tlc }}, {{ final }}],
+            backgroundColor: [
+                'rgba(37, 99, 235, 0.12)',
+                'rgba(37, 99, 235, 0.12)',
+                'rgba(37, 99, 235, 0.12)',
+                'rgba(37, 99, 235, 0.75)'
+            ],
+            borderColor: [blue, blue, blue, blue],
+            borderWidth: 1.5,
+            borderRadius: 6,
+            borderSkipped: false
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            tooltip: {
+                backgroundColor: '#1E293B',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: { label: ctx => `${ctx.parsed.y} L` }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: '#F1F5F9' },
+                title: { display: true, text: 'Liters', font: { weight: '600' }, color: '#94A3B8' }
+            },
+            x: { grid: { display: false }, ticks: { font: { weight: '500' } } }
+        }
+    }
+});
+
+/* ===== Feature Importance Chart ===== */
+new Chart(document.getElementById('featureChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ feature_labels | tojson }},
+        datasets: [{
+            label: 'Importance (%)',
+            data: {{ feature_values | tojson }},
+            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+            borderColor: blue,
+            borderWidth: 1.5,
+            borderRadius: 6,
+            borderSkipped: false
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: {
+            tooltip: {
+                backgroundColor: '#1E293B',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: { label: ctx => `${ctx.parsed.x}%` }
+            }
+        },
+        scales: {
+            x: {
+                beginAtZero: true,
+                grid: { color: '#F1F5F9' },
+                title: { display: true, text: 'Importance (%)', font: { weight: '600' }, color: '#94A3B8' }
+            },
+            y: { grid: { display: false }, ticks: { font: { weight: '500' } } }
+        }
+    }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TLC Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<h1>Total Lung Capacity Prediction System</h1>
+
+<form action="/predict" method="POST">
+
+<div class="section-block">
+<h3 class="section-title">🧍 Demographics</h3>
+
+Age:
+<input type="number" step="any" name="age" required>
+
+Gender:
+<select name="gender">
+    <option>Male</option>
+    <option>Female</option>
+</select>
+
+Height (cm):
+<input type="number" step="any" name="height" required>
+
+Weight (kg):
+<input type="number" step="any" name="weight" required>
+
+Smoking Status:
+<select name="smoking">
+    <option>Never</option>
+    <option>Former</option>
+    <option>Current</option>
+</select>
+</div>
+
+
+<div class="section-block">
+<h3 class="section-title">🫁 Spirometry
+    <span class="info-icon" data-info="Spirometry measures lung airflow. FEV1 and FVC help detect obstructive and restrictive lung diseases.">🛈</span>
+</h3>
+
+FEV1:
+<input type="number" step="any" name="fev" id="fev" required>
+<div class="range-popup" id="fev-range"></div>
+
+FVC:
+<input type="number" step="any" name="fvc" id="fvc" required>
+<div class="range-popup" id="fvc-range"></div>
+
+FEV/FVC Ratio:
+<input type="number" step="any" name="ratio" required>
+</div>
+
+
+<div class="section-block">
+<h3 class="section-title">🩸 Blood Gas Values
+    <span class="info-icon" data-info="Blood gas values like SpO2 and PCO2 indicate oxygen supply and carbon dioxide removal efficiency in lungs.">🛈</span>
+</h3>
+
+SpO2:
+<input type="number" step="any" name="spo2" id="spo2" required>
+<div class="input-warning" id="spo2-warning"></div>
+
+PCO2:
+<input type="number" step="any" name="pco2" id="pco2" required>
+<div class="input-warning" id="pco2-warning"></div>
+</div>
+
+
+<div class="section-block">
+<h3 class="section-title">📊 Additional Lung Metrics</h3>
+
+PEF:
+<input type="number" step="any" name="pef" required>
+
+Estimated Residual Volume (RV):
+<input type="number" step="any" name="rv"  required>
+</div>
+
+<button type="submit" class="predict-btn" id="predictBtn">
+<span id="btnText">🫁 Predict TLC</span>
+<span class="spinner" id="spinner"></span>
+</button>
+
+
+</form>
+<script>
+  const genderSelect = document.querySelector('select[name="gender"]');
+
+const ranges = {
+
+    fev: {
+        male: "3.5 – 5.0 L",
+        female: "2.5 – 4.0 L"
+    },
+
+    fvc: {
+        male: "4.5 – 6.0 L",
+        female: "3.0 – 4.5 L"
+    },
+
+    pef: {
+        male: "400 – 700 L/min",
+        female: "300 – 500 L/min"
+    },
+
+    spo2: {
+        general: "95 – 100 %"
+    },
+
+    pco2: {
+        general: "35 – 45 mmHg"
+    }
+
+};
+
+
+function showRange(inputId, popupId){
+
+    const input = document.getElementById(inputId);
+    const popup = document.getElementById(popupId);
+
+    input.addEventListener("focus", () => {
+
+        let gender = genderSelect.value.toLowerCase();
+
+        let content = "";
+
+        if(ranges[inputId].general){
+
+            content = `
+            <strong>Normal Range</strong><br>
+            ${ranges[inputId].general}
+            `;
+
+        } else {
+
+            content = `
+            <strong>Normal Range</strong><br>
+            Male: ${ranges[inputId].male}<br>
+            Female: ${ranges[inputId].female}
+            `;
+
+        }
+
+        popup.innerHTML = content;
+        popup.classList.add("show");
+
+    });
+
+    input.addEventListener("blur", () => {
+        popup.classList.remove("show");
+    });
+
+}
+
+
+showRange("fev","fev-range");
+showRange("fvc","fvc-range");
+showRange("pef","pef-range");
+showRange("spo2","spo2-range");
+showRange("pco2","pco2-range");
+function validateInput(id, min, max, message){
+
+    const input = document.getElementById(id);
+    const warning = document.getElementById(id + "-warning");
+
+    input.addEventListener("input", () => {
+
+        const value = parseFloat(input.value);
+
+        if(!value){
+            warning.innerText = "";
+            return;
+        }
+
+        if(value < min || value > max){
+            warning.innerText = message;
+        }else{
+            warning.innerText = "";
+        }
+
+    });
+
+}
+
+
+validateInput(
+    "spo2",
+    95,
+    100,
+    "⚠ Low oxygen saturation detected. Normal range: 95–100%"
+);
+
+validateInput(
+    "pco2",
+    35,
+    45,
+    "⚠ Abnormal CO₂ level detected. Normal range: 35–45 mmHg"
+);
+
+validateInput(
+    "fev",
+    2.5,
+    5,
+    "⚠ FEV1 value outside typical range."
+);
+
+validateInput(
+    "fvc",
+    3,
+    6,
+    "⚠ FVC value outside typical range."
+);
+
+validateInput(
+    "pef",
+    300,
+    700,
+    "⚠ PEF value outside typical range."
+);
+
+document.querySelector("form").addEventListener("submit", function() {
+
+    let btn = document.getElementById("predictBtn");
+    let text = document.getElementById("btnText");
+    let spinner = document.getElementById("spinner");
+
+    text.innerText = "AI Analysing...";
+    spinner.style.display = "inline-block";
+
+    btn.disabled = true;
+});
+
+
+document.querySelectorAll("input, select").forEach(element => {
+    element.addEventListener("input", estimateRV);
+});
+
+
+
+</script>
+
+
+</body>
+</html>
