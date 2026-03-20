@@ -3,6 +3,5 @@ pandas
 numpy
 joblib
 scikit-learn==1.7.2
-tensorflow
 psycopg2-binary
 gunicorn

@@ -6,13 +6,11 @@ import sqlite3
 import os
 from functools import wraps
 from flask import Flask, render_template, request, session, redirect, url_for, flash
-from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
 app.secret_key = 'tlc_prediction_2026_secret'
 
 # ================= LOAD MODELS =================
-ann_model = load_model("models/ann_model.keras")
 rf_model = joblib.load("models/rf_model.pkl")
 dt_model = joblib.load("models/dt_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
