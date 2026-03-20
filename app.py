@@ -74,10 +74,6 @@ def init_db():
                 gender TEXT DEFAULT 'Male'
             )
         ''')
-        try:
-            cursor.execute("ALTER TABLE users ADD COLUMN gender TEXT DEFAULT 'Male'")
-        except Exception:
-            pass
             
         cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS predictions (
