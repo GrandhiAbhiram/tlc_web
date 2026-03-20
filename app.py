@@ -263,8 +263,8 @@ def predict():
 
         normal_input = input_df.values
         scaled_input = scaler.transform(normal_input)
-        rf_pred = rf_model.predict(normal_input)[0]
-        dt_pred = dt_model.predict(normal_input)[0]
+        rf_pred = float(rf_model.predict(scaled_input)[0])
+        dt_pred = float(dt_model.predict(scaled_input)[0])
         
         # Base ML Prediction
         raw_ml_pred = (rf_pred + dt_pred) / 2
@@ -337,9 +337,9 @@ def predict():
 
         deviation = ((final_pred - ideal_tlc) / ideal_tlc) * 100
 
-        # Save to database
+        # Save to database — cast to native float to avoid np.float64 schema error in PostgreSQL
         execute_query('INSERT INTO predictions (user_email, tlc, health_score, status) VALUES (?, ?, ?, ?)', 
-                      (session["user_email"], round(final_pred, 2), health_score, health_status), commit=True)
+                      (session["user_email"], float(round(final_pred, 2)), float(health_score), health_status), commit=True)
 
         return render_template("result.html",
             rf=round(rf_pred, 2), dt=round(dt_pred, 2),
